@@ -163,13 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderFavorites();
 
-  /* Rafraîchir si le cache est périmé ou absent */
-  if (!state.rates || isCacheStale()) {
-    fetchRates();
-  } else {
-    updateStatusUI(true);
-    updateUpdateBar();
-  }
+  /* Toujours tenter un fetch pour déterminer l'état réseau réel.
+     Si le cache est frais et le réseau disponible, les taux seront
+     silencieusement mis à jour. Si hors ligne, le SW sert le cache
+     avec le marqueur X-Served-From:sw-cache. */
+  updateUpdateBar();
+  fetchRates();
 });
 
 /* ============================================================
@@ -187,9 +186,11 @@ function registerServiceWorker() {
    Réseau — événements online/offline
    ============================================================ */
 function setupNetworkListeners() {
-  window.addEventListener('online',  () => {
-    updateStatusUI(true);
+  /* L'événement 'online' déclenche une re-tentative ; le résultat réel
+     du fetch mettra à jour le badge (via fetchRates → updateStatusUI). */
+  window.addEventListener('online', () => {
     if (isCacheStale()) fetchRates();
+    else updateStatusUI(true);
   });
   window.addEventListener('offline', () => updateStatusUI(false));
 }
@@ -237,14 +238,16 @@ async function fetchRates() {
   if (state.isLoading) return;
   state.isLoading = true;
   setRefreshLoading(true);
-  hideAlert();
 
   try {
     const controller = new AbortController();
     const timeout    = setTimeout(() => controller.abort(), 10000);
 
-    const response = await fetch(API_URL, { signal: controller.signal });
+    const response   = await fetch(API_URL, { signal: controller.signal, cache: 'no-store' });
     clearTimeout(timeout);
+
+    /* Détecter si la réponse vient du cache Service Worker (= hors ligne) */
+    const fromSwCache = response.headers.get('X-Served-From') === 'sw-cache';
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -252,28 +255,42 @@ async function fetchRates() {
 
     if (data.result !== 'success') throw new Error('Réponse API invalide');
 
-    state.rates      = data.rates;
-    state.base       = data.base_code;
-    state.lastUpdate = new Date();
-    saveToStorage();
+    if (fromSwCache) {
+      /* Données servies par le SW hors ligne : pas de mise à jour réelle */
+      populateSelects();
+      calculate();
+      updateUpdateBar();
+      updateStatusUI(false);
+      if (state.rates) {
+        showToast('Hors ligne — cache local utilisé');
+      }
+    } else {
+      /* Données fraîches depuis le réseau */
+      const wasStale = isCacheStale();
+      state.rates      = data.rates;
+      state.base       = data.base_code;
+      state.lastUpdate = new Date();
+      saveToStorage();
 
-    populateSelects();
-    calculate();
-    updateUpdateBar();
-    updateStatusUI(true);
-    showToast('Taux mis à jour ✓');
+      populateSelects();
+      calculate();
+      updateUpdateBar();
+      updateStatusUI(true);
+      /* Toast uniquement si les données étaient périmées ou absentes */
+      if (wasStale) showToast('Taux mis à jour ✓');
+    }
 
   } catch (err) {
     if (err.name === 'AbortError') {
-      showAlert('La requête a expiré. Vérifiez votre connexion.', 'warning');
+      showToast('Requête expirée — vérifiez votre connexion');
     } else if (!navigator.onLine) {
       if (state.rates) {
-        showAlert('Mode hors ligne — utilisation du cache local.', 'warning');
+        showToast('Hors ligne — cache local utilisé');
       } else {
-        showAlert('Pas de connexion et aucun cache disponible. Connectez-vous pour charger les taux.', 'error');
+        showToast('Hors ligne et aucun cache disponible');
       }
     } else {
-      showAlert('Impossible de charger les taux. Réessayez dans un instant.', 'warning');
+      showToast('Impossible de charger les taux');
     }
     updateStatusUI(navigator.onLine);
   } finally {
@@ -629,19 +646,9 @@ function setRefreshLoading(loading) {
 }
 
 /* ============================================================
-   Messages alertes et toasts
+/* ============================================================
+   Messages — toasts
    ============================================================ */
-function showAlert(msg, type = 'warning') {
-  const el = document.getElementById('alert');
-  el.textContent = msg;
-  el.className   = `alert ${type}`;
-  el.hidden      = false;
-}
-
-function hideAlert() {
-  const el = document.getElementById('alert');
-  el.hidden = true;
-}
 
 let toastTimer;
 function showToast(msg) {

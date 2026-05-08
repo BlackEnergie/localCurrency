@@ -4,7 +4,7 @@
    pour l'API (fallback sur cache).
    ========================================================== */
 
-const CACHE_NAME = 'localcurrency-v1';
+const CACHE_NAME = 'localcurrency-v3';
 
 const ASSETS = [
   './',
@@ -41,17 +41,35 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
-  /* Requêtes API : Network-first, fallback cache */
+  /* Requêtes API : Network-first, fallback cache avec marqueur */
   if (url.includes('open.er-api.com')) {
     event.respondWith(
-      fetch(event.request)
+      /* cache:'no-store' force un vrai aller-réseau, contournant le disk cache */
+      fetch(new Request(event.request.url, { cache: 'no-store' }))
         .then(response => {
           /* Mettre en cache la réponse API fraîche */
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (!cached) {
+            return new Response(JSON.stringify({ result: 'error', message: 'offline' }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          /* Ajouter un header pour signaler que la réponse vient du cache SW */
+          const body    = await cached.blob();
+          const headers = new Headers(cached.headers);
+          headers.set('X-Served-From', 'sw-cache');
+          return new Response(body, {
+            status: cached.status,
+            statusText: cached.statusText,
+            headers
+          });
+        })
     );
     return;
   }
