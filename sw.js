@@ -27,10 +27,10 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
-  /* Ne pas appeler skipWaiting() ici : on attend la confirmation de l'utilisateur */
+  self.skipWaiting(); /* Activation immédiate sans attendre la fermeture des onglets */
 });
 
-/* ------ Activation à la demande de l'utilisateur ------ */
+/* ------ Activation à la demande (conservé pour compatibilité éventuelle) ------ */
 self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
