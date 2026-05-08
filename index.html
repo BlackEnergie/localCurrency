@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Application PWA de conversion de monnaies avec cache hors ligne">
+  <meta name="theme-color" content="#6C63FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LocalCurrency">
+  <title>Local Currency</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- En-tête -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="app-logo">
+          <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+            <rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.18)"/>
+            <text x="20" y="27" text-anchor="middle" font-size="19" font-weight="bold"
+              fill="white" font-family="system-ui, sans-serif">€$</text>
+          </svg>
+        </div>
+        <h1 class="app-title">Local Currency</h1>
+      </div>
+      <div class="header-right">
+        <div class="status-badge" id="status-badge">
+          <span class="status-dot" id="status-dot"></span>
+          <span class="status-label" id="status-label">…</span>
+        </div>
+        <button class="btn-icon" id="btn-refresh" aria-label="Actualiser les taux de change">
+          <svg id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <polyline points="1 4 1 10 7 10"/>
+            <polyline points="23 20 23 14 17 14"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <main class="app-main">
+      <div class="card" id="card">
+
+        <!-- Montant -->
+        <div class="field">
+          <label class="field-label" for="amount">Montant</label>
+          <input
+            type="text"
+            id="amount"
+            class="input-amount"
+            value="1"
+            inputmode="decimal"
+            placeholder="0"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+
+        <!-- Devise source -->
+        <div class="field">
+          <label class="field-label" for="from-currency">De</label>
+          <div class="select-wrapper">
+            <select id="from-currency" class="select-currency">
+              <option>Chargement…</option>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Ligne d'inversion + taux unitaire -->
+        <div class="swap-row">
+          <button class="btn-swap" id="btn-swap" aria-label="Inverser les devises">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+              <polyline points="17 1 21 5 17 9"/>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+              <polyline points="7 23 3 19 7 15"/>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+            </svg>
+          </button>
+          <span class="rate-label" id="rate-label">—</span>
+        </div>
+
+        <!-- Devise cible -->
+        <div class="field">
+          <label class="field-label" for="to-currency">Vers</label>
+          <div class="select-wrapper">
+            <select id="to-currency" class="select-currency">
+              <option>Chargement…</option>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Résultat -->
+        <div class="result-box" id="result-box">
+          <div class="result-number" id="result-number">—</div>
+          <div class="result-subtitle" id="result-subtitle">&nbsp;</div>
+        </div>
+
+      </div><!-- /card -->
+
+      <!-- Date de mise à jour -->
+      <div class="update-bar" id="update-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span id="update-text">Aucune donnée en cache</span>
+      </div>
+
+      <!-- Message d'erreur / avertissement -->
+      <div class="alert" id="alert" hidden></div>
+
+    </main>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
