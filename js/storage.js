@@ -3,7 +3,7 @@
    ============================================================ */
 
 import { state } from './state.js';
-import { STORAGE_KEY, FAVORITES_KEY, CACHE_MAX_AGE } from './currencies.js';
+import { STORAGE_KEY, FAVORITES_KEY, HISTORY_KEY, CACHE_MAX_AGE } from './currencies.js';
 
 export function loadFromStorage() {
   try {
@@ -52,5 +52,23 @@ export function saveFavorites() {
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(state.favorites));
   } catch {
     console.warn('Impossible d\'écrire les favoris dans localStorage.');
+  }
+}
+
+export function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw) state.history = JSON.parse(raw);
+    if (!Array.isArray(state.history)) state.history = [];
+  } catch {
+    state.history = [];
+  }
+}
+
+export function saveHistory() {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history));
+  } catch {
+    console.warn('Impossible d\'écrire l\'historique dans localStorage.');
   }
 }

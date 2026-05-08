@@ -8,7 +8,7 @@ import { state }                                         from './state.js';
 import { POPULAR, CURRENCY_NAMES, CURRENCY_FLAGS,
          THEMES, THEME_KEY }                             from './currencies.js';
 import { formatAmount, formatRate, escapeAttr }           from './format.js';
-import { saveFavorites, isCacheStale }                   from './storage.js';
+import { saveFavorites, isCacheStale, saveHistory } from './storage.js';
 
 /* ============================================================
    Conversion
@@ -331,4 +331,86 @@ export function initThemePicker() {
   picker.addEventListener('click', e => e.stopPropagation());
 
   function closePicker() { picker.classList.remove('open'); }
+}
+
+/* ============================================================
+   Historique des saisies
+   ============================================================ */
+const HISTORY_MAX = 10;
+
+export function addToHistory() {
+  const from      = document.getElementById('from-currency').value;
+  const to        = document.getElementById('to-currency').value;
+  const amountRaw = document.getElementById('amount').value;
+  const amount    = parseInputLocal(amountRaw);
+
+  if (!state.rates || !from || !to || isNaN(amount) || amount <= 0) return;
+
+  const result = convert(amount, from, to);
+  if (result === null) return;
+
+  /* Dédupliquer : même paire + même montant → on remplace et on remonte */
+  state.history = state.history.filter(
+    h => !(h.from === from && h.to === to && h.amount === amount)
+  );
+  state.history.unshift({ from, to, amount, result, ts: Date.now() });
+  if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
+
+  saveHistory();
+  renderHistory();
+}
+
+export function renderHistory() {
+  const section = document.getElementById('history-section');
+  const listEl  = document.getElementById('history-list');
+  if (!section || !listEl) return;
+
+  if (state.history.length === 0) {
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden   = false;
+  listEl.innerHTML = '';
+
+  state.history.forEach(({ from, to, amount, result, ts }) => {
+    const flagFrom = CURRENCY_FLAGS[from] || '';
+    const flagTo   = CURRENCY_FLAGS[to]   || '';
+
+    /* Date relative */
+    const diff  = Date.now() - ts;
+    let   when;
+    if      (diff < 60000)   when = 'à l\'instant';
+    else if (diff < 3600000) when = `il y a ${Math.floor(diff / 60000)} min`;
+    else if (diff < 86400000)when = `il y a ${Math.floor(diff / 3600000)} h`;
+    else                     when = new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+    const row = document.createElement('div');
+    row.className = 'hist-row';
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.innerHTML =
+      `<span class="hist-pair">${flagFrom} ${from} → ${flagTo} ${to}</span>` +
+      `<span class="hist-amounts">${formatAmount(amount)} <span class="hist-arrow">→</span> ${formatAmount(result)}</span>` +
+      `<span class="hist-when">${when}</span>`;
+
+    const restore = () => {
+      document.getElementById('from-currency').value = from;
+      document.getElementById('to-currency').value   = to;
+      /* Restaurer le montant brut (virgule fr) */
+      document.getElementById('amount').value = String(amount).replace('.', ',');
+      calculate();
+      updateStarButton();
+      /* Ré-formatter le champ (comme au blur) */
+      const n = amount;
+      const intPart = Math.trunc(n);
+      const dec = String(n).split('.')[1];
+      const intFmt = intPart.toLocaleString('fr-FR', { useGrouping: true });
+      document.getElementById('amount').value = dec ? intFmt + ',' + dec : intFmt;
+    };
+
+    row.addEventListener('click', restore);
+    row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') restore(); });
+    listEl.appendChild(row);
+  });
 }

@@ -10,4 +10,5 @@ export const state = {
   lastUpdate: null,   // Date object
   isLoading:  false,
   favorites:  [],     // [{ from: 'USD', to: 'EUR' }, ...]
+  history:    [],     // [{ from, to, amount, result, ts }, ...] max 10
 };

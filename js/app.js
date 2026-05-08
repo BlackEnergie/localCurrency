@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { state }                                  from './state.js';
-import { loadFromStorage, loadFavorites,
+import { loadFromStorage, loadFavorites, loadHistory,
          isCacheStale }                           from './storage.js';
 import { parseInput, formatInputValue }           from './format.js';
 import { THEME_KEY }                              from './currencies.js';
@@ -14,6 +14,7 @@ import {
   updateUpdateBar, updateStatusUI,
   renderFavorites, updateStarButton, toggleFavorite,
   showUpdateToast, applyTheme, initThemePicker,
+  addToHistory, renderHistory,
 } from './ui.js';
 import { fetchRates } from './api.js';
 
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadFromStorage();
   loadFavorites();
+  loadHistory();
 
   const amountEl = document.getElementById('amount');
   const initVal  = parseInput(amountEl.value);
@@ -42,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   renderFavorites();
+  renderHistory();
   updateUpdateBar();
   fetchRates();
 });
@@ -127,13 +130,14 @@ function setupUIListeners() {
   amountEl.addEventListener('blur', () => {
     const n = parseInput(amountEl.value);
     if (isFinite(n) && !isNaN(n)) amountEl.value = formatInputValue(n);
+    addToHistory();
   });
 
   document.getElementById('from-currency').addEventListener('change', () => {
-    calculate(); updateStarButton();
+    calculate(); updateStarButton(); addToHistory();
   });
   document.getElementById('to-currency').addEventListener('change', () => {
-    calculate(); updateStarButton();
+    calculate(); updateStarButton(); addToHistory();
   });
 
   document.getElementById('btn-favorite').addEventListener('click', () => {

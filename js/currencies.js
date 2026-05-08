@@ -5,6 +5,7 @@
 export const API_URL       = 'https://open.er-api.com/v6/latest/USD';
 export const STORAGE_KEY   = 'localcurrency_cache';
 export const FAVORITES_KEY = 'localcurrency_favorites';
+export const HISTORY_KEY   = 'localcurrency_history';
 export const THEME_KEY     = 'localcurrency_theme';
 export const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 h en ms
 
