@@ -349,12 +349,7 @@ function calculate() {
    ============================================================ */
 function formatAmount(n) {
   if (!isFinite(n)) return '—';
-  const opts = n >= 100
-    ? { useGrouping: true, maximumFractionDigits: 2 }
-    : n >= 1
-      ? { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 4 }
-      : { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 6 };
-  return n.toLocaleString('fr-FR', opts);
+  return n.toLocaleString('fr-FR', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatRate(r) {
