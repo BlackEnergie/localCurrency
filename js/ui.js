@@ -4,10 +4,11 @@
    app.js est responsable de brancher fetchRates sur les events.
    ============================================================ */
 
-import { state }                              from './state.js';
-import { POPULAR, CURRENCY_NAMES, CURRENCY_FLAGS } from './currencies.js';
-import { formatAmount, formatRate, escapeAttr } from './format.js';
-import { saveFavorites, isCacheStale }         from './storage.js';
+import { state }                                         from './state.js';
+import { POPULAR, CURRENCY_NAMES, CURRENCY_FLAGS,
+         THEMES, THEME_KEY }                             from './currencies.js';
+import { formatAmount, formatRate, escapeAttr }           from './format.js';
+import { saveFavorites, isCacheStale }                   from './storage.js';
 
 /* ============================================================
    Conversion
@@ -233,17 +234,15 @@ export function updateUpdateBar() {
   el.textContent = `Taux mis à jour ${label}`;
 }
 
-export function setRefreshLoading(loading) {
-  const btn = document.getElementById('btn-refresh');
-  btn.classList.toggle('spinning', loading);
-  btn.disabled = loading;
-}
 
 /* ============================================================
    Toast
    ============================================================ */
 let toastTimer;
+let updateToastActive = false;
+
 export function showToast(msg) {
+  if (updateToastActive) return; // ne pas écraser le toast de mise à jour SW
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('visible');
@@ -254,6 +253,7 @@ export function showToast(msg) {
 /* Toast persistant avec bouton d'action (ex. mise à jour SW).
    Pas de fermeture automatique — l'utilisateur doit cliquer. */
 export function showUpdateToast(onConfirm) {
+  updateToastActive = true;
   const el = document.getElementById('toast');
   clearTimeout(toastTimer);
   el.innerHTML =
@@ -261,8 +261,74 @@ export function showUpdateToast(onConfirm) {
     '<button class="toast-action">Actualiser</button>';
   el.classList.add('visible');
   el.querySelector('.toast-action').addEventListener('click', () => {
+    updateToastActive = false;
     el.classList.remove('visible');
     el.innerHTML = '';
     onConfirm();
   });
+}
+
+/* ============================================================
+   Thèmes de couleur
+   ============================================================ */
+export function applyTheme(id) {
+  const theme = THEMES.find(t => t.id === id) || THEMES[0];
+  const root  = document.documentElement;
+  root.style.setProperty('--clr-primary',       theme.primary);
+  root.style.setProperty('--clr-primary-dark',  theme.dark);
+  root.style.setProperty('--clr-primary-mid',   theme.mid);
+  root.style.setProperty('--clr-primary-light', theme.light);
+  root.style.setProperty('--clr-bg',            theme.bg);
+  root.style.setProperty('--clr-border',        theme.border);
+  root.style.setProperty('--clr-result-bg',     theme.resultBg);
+  root.style.setProperty('--clr-text',          theme.text);
+  root.style.setProperty('--clr-shadow-rgb',    theme.shadow);
+
+  try { localStorage.setItem(THEME_KEY, id); } catch {}
+
+  /* Mettre à jour l'état actif des swatches si le picker est déjà rendu */
+  document.querySelectorAll('.theme-swatch').forEach(el => {
+    const active = el.dataset.theme === theme.id;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-pressed', String(active));
+  });
+}
+
+export function initThemePicker() {
+  const btn    = document.getElementById('btn-theme');
+  const picker = document.getElementById('theme-picker');
+  if (!btn || !picker) return;
+
+  /* Construire les swatches */
+  picker.innerHTML =
+    '<span class="theme-picker-label">Thème</span>' +
+    '<div class="theme-swatches">' +
+    THEMES.map(t =>
+      `<button class="theme-swatch" data-theme="${t.id}"
+        style="background:${t.primary}"
+        title="${t.label}" aria-label="${t.label}" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"
+          stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </button>`
+    ).join('') +
+    '</div>';
+
+  picker.querySelectorAll('.theme-swatch').forEach(el => {
+    el.addEventListener('click', () => {
+      applyTheme(el.dataset.theme);
+      closePicker();
+    });
+  });
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    picker.classList.toggle('open');
+  });
+
+  document.addEventListener('click', closePicker);
+  picker.addEventListener('click', e => e.stopPropagation());
+
+  function closePicker() { picker.classList.remove('open'); }
 }

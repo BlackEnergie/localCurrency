@@ -8,11 +8,12 @@ import { state }                                  from './state.js';
 import { loadFromStorage, loadFavorites,
          isCacheStale }                           from './storage.js';
 import { parseInput, formatInputValue }           from './format.js';
+import { THEME_KEY }                              from './currencies.js';
 import {
   populateSelects, calculate,
   updateUpdateBar, updateStatusUI,
   renderFavorites, updateStarButton, toggleFavorite,
-  showUpdateToast,
+  showUpdateToast, applyTheme, initThemePicker,
 } from './ui.js';
 import { fetchRates } from './api.js';
 
@@ -23,6 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   setupNetworkListeners();
   setupUIListeners();
+
+  /* Appliquer le thème sauvegardé avant tout rendu */
+  try { applyTheme(localStorage.getItem(THEME_KEY) || 'violet'); } catch { applyTheme('violet'); }
+  initThemePicker();
 
   loadFromStorage();
   loadFavorites();
@@ -47,27 +52,46 @@ document.addEventListener('DOMContentLoaded', () => {
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
 
-  navigator.serviceWorker.register('./sw.js').then(registration => {
-    /* SW déjà en attente (ex. page rechargée pendant une mise à jour) */
-    if (registration.waiting) {
-      showUpdateToast(() => applyUpdate(registration.waiting));
-    }
-
-    /* Nouveau SW trouvé pendant la session */
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          showUpdateToast(() => applyUpdate(newWorker));
-        }
-      });
-    });
-  }).catch(err => console.warn('Service Worker non enregistré :', err));
-
-  /* Recharger quand le nouveau SW prend le contrôle */
+  /* Recharger dès que le nouveau SW prend le contrôle */
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
   });
+
+  navigator.serviceWorker.register('./sw.js').then(registration => {
+
+    /* Attache un listener statechange sur un worker en cours d'install,
+       et affiche le toast quand il passe à 'installed' (= waiting). */
+    function trackWorker(worker) {
+      if (!worker) return;
+      if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+        showUpdateToast(() => applyUpdate(worker));
+        return;
+      }
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateToast(() => applyUpdate(worker));
+        }
+      });
+    }
+
+    /* Cas 1 : SW déjà en attente quand register() résout */
+    if (registration.waiting) {
+      showUpdateToast(() => applyUpdate(registration.waiting));
+      return;
+    }
+
+    /* Cas 2 : SW en cours d'installation quand register() résout
+       (race condition : updatefound a déjà tiré avant le .then) */
+    if (registration.installing) {
+      trackWorker(registration.installing);
+    }
+
+    /* Cas 3 : mise à jour détectée plus tard pendant la session */
+    registration.addEventListener('updatefound', () => {
+      trackWorker(registration.installing);
+    });
+
+  }).catch(err => console.warn('Service Worker non enregistré :', err));
 }
 
 function applyUpdate(worker) {
@@ -111,8 +135,6 @@ function setupUIListeners() {
   document.getElementById('to-currency').addEventListener('change', () => {
     calculate(); updateStarButton();
   });
-
-  document.getElementById('btn-refresh').addEventListener('click', () => fetchRates());
 
   document.getElementById('btn-favorite').addEventListener('click', () => {
     const btn = document.getElementById('btn-favorite');

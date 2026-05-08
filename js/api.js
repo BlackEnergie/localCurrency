@@ -10,13 +10,12 @@ import { isCacheStale, saveToStorage }   from './storage.js';
 import {
   populateSelects, calculate,
   updateUpdateBar, updateStatusUI,
-  showToast, setRefreshLoading,
+  showToast,
 } from './ui.js';
 
 export async function fetchRates() {
   if (state.isLoading) return;
   state.isLoading = true;
-  setRefreshLoading(true);
 
   try {
     const controller = new AbortController();
@@ -72,6 +71,5 @@ export async function fetchRates() {
     updateStatusUI(navigator.onLine);
   } finally {
     state.isLoading = false;
-    setRefreshLoading(false);
   }
 }

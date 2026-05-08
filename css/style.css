@@ -7,6 +7,7 @@
 :root {
   --clr-primary:       #6C63FF;
   --clr-primary-dark:  #4B44CC;
+  --clr-primary-mid:   #9B8BFF;
   --clr-primary-light: #EDE9FF;
   --clr-bg:            #F0EEFF;
   --clr-card:          #FFFFFF;
@@ -17,10 +18,11 @@
   --clr-success:       #10B981;
   --clr-warning:       #F59E0B;
   --clr-error:         #EF4444;
+  --clr-shadow-rgb:    108, 99, 255;
 
   --radius-card:  20px;
   --radius-input: 14px;
-  --shadow-card:  0 4px 24px rgba(108, 99, 255, 0.12);
+  --shadow-card:  0 4px 24px rgba(var(--clr-shadow-rgb), 0.12);
   --transition:   0.2s ease;
 }
 
@@ -58,12 +60,12 @@ label { display: block; }
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px 14px;
-  background: linear-gradient(135deg, var(--clr-primary) 0%, #9B8BFF 100%);
+  background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-primary-mid) 100%);
   color: white;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 16px rgba(108, 99, 255, 0.25);
+  box-shadow: 0 2px 16px rgba(var(--clr-shadow-rgb), 0.25);
 }
 
 .header-left  { display: flex; align-items: center; gap: 10px; }
@@ -167,7 +169,7 @@ label { display: block; }
 .input-amount::-webkit-inner-spin-button { -webkit-appearance: none; }
 .input-amount:focus {
   border-color: var(--clr-primary);
-  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--clr-shadow-rgb), 0.15);
 }
 
 /* Select de devise */
@@ -193,7 +195,7 @@ label { display: block; }
 }
 .select-currency:focus {
   border-color: var(--clr-primary);
-  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--clr-shadow-rgb), 0.15);
 }
 .select-arrow {
   position: absolute;
@@ -219,14 +221,14 @@ label { display: block; }
   border-radius: 50%;
   background: var(--clr-primary);
   color: white;
-  box-shadow: 0 3px 10px rgba(108, 99, 255, 0.35);
+  box-shadow: 0 3px 10px rgba(var(--clr-shadow-rgb), 0.35);
   transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
   touch-action: manipulation;
 }
 .btn-swap:active {
   background: var(--clr-primary-dark);
   transform: scale(0.93);
-  box-shadow: 0 1px 6px rgba(108, 99, 255, 0.2);
+  box-shadow: 0 1px 6px rgba(var(--clr-shadow-rgb), 0.2);
 }
 .btn-swap.swapping svg {
   animation: swapAnim 0.35s ease;
@@ -353,7 +355,7 @@ label { display: block; }
   scroll-snap-align: start;
   transition: border-color var(--transition), background var(--transition), transform var(--transition);
   touch-action: manipulation;
-  box-shadow: 0 1px 4px rgba(108,99,255,0.07);
+  box-shadow: 0 1px 4px rgba(var(--clr-shadow-rgb), 0.07);
 }
 .fav-pill:active {
   background: var(--clr-primary-light);
@@ -407,7 +409,7 @@ label { display: block; }
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: #1E1B4B;
+  background: var(--clr-text);
   color: white;
   padding: 12px 20px;
   border-radius: 50px;
@@ -459,3 +461,56 @@ label { display: block; }
   .app-main { padding: 28px 24px 40px; }
   .card { padding: 28px 24px; }
 }
+
+/* ============================================================
+   Sélecteur de thème
+   ============================================================ */
+.theme-picker {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 16px;
+  background: var(--clr-card);
+  border: 1px solid var(--clr-border);
+  border-radius: 16px;
+  padding: 14px;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(var(--clr-shadow-rgb), 0.18);
+  z-index: 200;
+}
+.theme-picker.open {
+  display: flex;
+  animation: picker-in 0.15s ease;
+}
+@keyframes picker-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+.theme-picker-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-2);
+}
+.theme-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.theme-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+.theme-swatch:hover    { transform: scale(1.12); }
+.theme-swatch.active   { border-color: white; box-shadow: 0 0 0 2px var(--clr-primary); }
+.theme-swatch svg      { opacity: 0; transition: opacity 0.15s; }
+.theme-swatch.active svg { opacity: 1; }
