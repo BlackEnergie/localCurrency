@@ -387,30 +387,39 @@ export function renderHistory() {
 
     const row = document.createElement('div');
     row.className = 'hist-row';
-    row.setAttribute('role', 'button');
-    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'listitem');
     row.innerHTML =
       `<span class="hist-pair">${flagFrom} ${from} → ${flagTo} ${to}</span>` +
       `<span class="hist-amounts">${formatAmount(amount)} <span class="hist-arrow">→</span> ${formatAmount(result)}</span>` +
-      `<span class="hist-when">${when}</span>`;
+      `<span class="hist-when">${when}</span>` +
+      `<button class="hist-remove" aria-label="Supprimer cette entrée" title="Supprimer">✕</button>`;
 
     const restore = () => {
       document.getElementById('from-currency').value = from;
       document.getElementById('to-currency').value   = to;
-      /* Restaurer le montant brut (virgule fr) */
       document.getElementById('amount').value = String(amount).replace('.', ',');
       calculate();
       updateStarButton();
-      /* Ré-formatter le champ (comme au blur) */
-      const n = amount;
-      const intPart = Math.trunc(n);
-      const dec = String(n).split('.')[1];
+      const intPart = Math.trunc(amount);
+      const dec = String(amount).split('.')[1];
       const intFmt = intPart.toLocaleString('fr-FR', { useGrouping: true });
       document.getElementById('amount').value = dec ? intFmt + ',' + dec : intFmt;
     };
 
-    row.addEventListener('click', restore);
+    row.addEventListener('click', e => {
+      if (e.target.closest('.hist-remove')) return;
+      restore();
+    });
     row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') restore(); });
+
+    row.querySelector('.hist-remove').addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = state.history.findIndex(h => h.ts === ts);
+      if (idx !== -1) state.history.splice(idx, 1);
+      saveHistory();
+      renderHistory();
+    });
+
     listEl.appendChild(row);
   });
 }
