@@ -15,6 +15,7 @@ import {
   renderFavorites, updateStarButton, toggleFavorite,
   applyTheme, initThemePicker,
   addToHistory, renderHistory,
+  initComboboxes, setCurrency,
 } from './ui.js';
 import { fetchRates } from './api.js';
 
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* Appliquer le thème sauvegardé avant tout rendu */
   try { applyTheme(localStorage.getItem(THEME_KEY) || 'violet'); } catch { applyTheme('violet'); }
   initThemePicker();
+  initComboboxes();
 
   loadFromStorage();
   loadFavorites();
@@ -43,8 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /* Auto-sélectionner le premier favori si disponible */
     if (state.favorites.length > 0) {
       const { from, to } = state.favorites[0];
-      document.getElementById('from-currency').value = from;
-      document.getElementById('to-currency').value   = to;
+      setCurrency('from', from);
+      setCurrency('to', to);
     }
     calculate();
   }
@@ -122,9 +124,10 @@ function setupUIListeners() {
   });
 
   document.getElementById('btn-swap').addEventListener('click', () => {
-    const fromEl = document.getElementById('from-currency');
-    const toEl   = document.getElementById('to-currency');
-    [fromEl.value, toEl.value] = [toEl.value, fromEl.value];
+    const fromCode = document.getElementById('from-currency').value;
+    const toCode   = document.getElementById('to-currency').value;
+    setCurrency('from', toCode);
+    setCurrency('to', fromCode);
 
     const btn = document.getElementById('btn-swap');
     btn.classList.add('swapping');

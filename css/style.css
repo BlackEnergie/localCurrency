@@ -172,13 +172,11 @@ label { display: block; }
   box-shadow: 0 0 0 3px rgba(var(--clr-shadow-rgb), 0.15);
 }
 
-/* Select de devise */
-.select-wrapper {
+/* Combobox de devise (remplace le select natif) */
+.combobox {
   position: relative;
-  display: flex;
-  align-items: center;
 }
-.select-currency {
+.combobox-input {
   width: 100%;
   padding: 13px 40px 13px 16px;
   border: 2px solid var(--clr-border);
@@ -188,20 +186,77 @@ label { display: block; }
   color: var(--clr-text);
   background: white;
   outline: none;
-  appearance: none;
-  -webkit-appearance: none;
   cursor: pointer;
   transition: border-color var(--transition), box-shadow var(--transition);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.select-currency:focus {
+.combobox-input:focus,
+.combobox.open .combobox-input {
   border-color: var(--clr-primary);
   box-shadow: 0 0 0 3px rgba(var(--clr-shadow-rgb), 0.15);
+  cursor: text;
 }
-.select-arrow {
+.combobox-arrow {
   position: absolute;
   right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none;
   color: var(--clr-primary);
+  transition: transform var(--transition);
+}
+.combobox.open .combobox-arrow {
+  transform: translateY(-50%) rotate(180deg);
+}
+.combobox-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1.5px solid var(--clr-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(var(--clr-shadow-rgb), 0.15);
+  z-index: 300;
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  scrollbar-width: thin;
+}
+.cb-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--clr-text);
+  transition: background var(--transition);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cb-item:hover,
+.cb-item.focused {
+  background: var(--clr-primary-light);
+  color: var(--clr-primary);
+}
+.cb-item.selected {
+  font-weight: 700;
+  color: var(--clr-primary);
+}
+.cb-separator {
+  height: 1px;
+  background: var(--clr-border);
+  margin: 4px 6px;
+}
+.cb-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--clr-text-2);
 }
 
 /* --- Ligne d'inversion --- */

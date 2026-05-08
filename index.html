@@ -71,15 +71,17 @@
 
         <!-- Devise source -->
         <div class="field">
-          <label class="field-label" for="from-currency">De</label>
-          <div class="select-wrapper">
-            <select id="from-currency" class="select-currency">
-              <option>Chargement…</option>
-            </select>
-            <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          <label class="field-label" for="from-display">De</label>
+          <div class="combobox" id="cb-from">
+            <input type="text" class="combobox-input" id="from-display"
+              placeholder="Chargement…" autocomplete="off" spellcheck="false"
+              aria-label="Devise source" aria-autocomplete="list" aria-haspopup="listbox">
+            <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
+            <div class="combobox-dropdown" id="dd-from" role="listbox" hidden></div>
+            <input type="hidden" id="from-currency" value="USD">
           </div>
         </div>
 
@@ -105,15 +107,17 @@
 
         <!-- Devise cible -->
         <div class="field">
-          <label class="field-label" for="to-currency">Vers</label>
-          <div class="select-wrapper">
-            <select id="to-currency" class="select-currency">
-              <option>Chargement…</option>
-            </select>
-            <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          <label class="field-label" for="to-display">Vers</label>
+          <div class="combobox" id="cb-to">
+            <input type="text" class="combobox-input" id="to-display"
+              placeholder="Chargement…" autocomplete="off" spellcheck="false"
+              aria-label="Devise cible" aria-autocomplete="list" aria-haspopup="listbox">
+            <svg class="combobox-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
+            <div class="combobox-dropdown" id="dd-to" role="listbox" hidden></div>
+            <input type="hidden" id="to-currency" value="EUR">
           </div>
         </div>
 

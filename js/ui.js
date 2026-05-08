@@ -7,7 +7,7 @@
 import { state }                                         from './state.js';
 import { POPULAR, CURRENCY_NAMES, CURRENCY_FLAGS,
          THEMES, THEME_KEY }                             from './currencies.js';
-import { formatAmount, formatRate, escapeAttr }           from './format.js';
+import { formatAmount, formatRate }                       from './format.js';
 import { saveFavorites, isCacheStale, saveHistory } from './storage.js';
 
 /* ============================================================
@@ -64,18 +64,173 @@ function parseInputLocal(str) {
 }
 
 /* ============================================================
+   Combobox de devise — état module et helpers
+   ============================================================ */
+let _sortedCodes = [];
+let _focusedIdx  = { from: -1, to: -1 };
+
+function _cbEls(which) {
+  return {
+    hidden:   document.getElementById(`${which}-currency`),
+    input:    document.getElementById(`${which}-display`),
+    dropdown: document.getElementById(`dd-${which}`),
+    wrapper:  document.getElementById(`cb-${which}`),
+  };
+}
+
+export function setCurrency(which, code) {
+  const { hidden, input } = _cbEls(which);
+  if (!hidden || !input || !code) return;
+  hidden.value = code;
+  const flag = CURRENCY_FLAGS[code] ? CURRENCY_FLAGS[code] + ' ' : '';
+  const name = CURRENCY_NAMES[code] || code;
+  input.value = `${flag}${code} — ${name}`;
+}
+
+function _renderItems(which, filter) {
+  const { dropdown, hidden } = _cbEls(which);
+  const query = (filter || '').toLowerCase().trim();
+  dropdown.innerHTML = '';
+  _focusedIdx[which] = -1;
+
+  let addedSep = false;
+  let count    = 0;
+
+  for (const code of _sortedCodes) {
+    const name = CURRENCY_NAMES[code] || code;
+    if (query && !code.toLowerCase().includes(query) && !name.toLowerCase().includes(query)) continue;
+
+    if (!query && !addedSep && !POPULAR.includes(code)) {
+      const sep = document.createElement('div');
+      sep.className = 'cb-separator';
+      dropdown.appendChild(sep);
+      addedSep = true;
+    }
+
+    const flag  = CURRENCY_FLAGS[code] ? CURRENCY_FLAGS[code] + ' ' : '';
+    const item  = document.createElement('div');
+    item.className  = 'cb-item';
+    item.setAttribute('role', 'option');
+    item.dataset.value = code;
+    item.textContent   = `${flag}${code} — ${name}`;
+    if (code === hidden.value) item.classList.add('selected');
+    dropdown.appendChild(item);
+    count++;
+  }
+
+  if (count === 0) {
+    const empty = document.createElement('div');
+    empty.className  = 'cb-empty';
+    empty.textContent = 'Aucune devise trouvée';
+    dropdown.appendChild(empty);
+  }
+}
+
+function _openDropdown(which) {
+  /* Fermer l'autre */
+  _closeDropdown(which === 'from' ? 'to' : 'from');
+
+  const { dropdown, wrapper, hidden } = _cbEls(which);
+  _renderItems(which, '');
+  dropdown.hidden = false;
+  wrapper.classList.add('open');
+
+  /* Scroller sur l'élément sélectionné */
+  const sel = dropdown.querySelector('.selected');
+  if (sel) requestAnimationFrame(() => sel.scrollIntoView({ block: 'nearest' }));
+}
+
+function _closeDropdown(which) {
+  const { dropdown, wrapper } = _cbEls(which);
+  dropdown.hidden = true;
+  wrapper.classList.remove('open');
+  /* Restaurer l'affichage de la sélection courante */
+  const code = document.getElementById(`${which}-currency`).value;
+  if (code) setCurrency(which, code);
+}
+
+function _moveFocus(which, dir) {
+  const { dropdown } = _cbEls(which);
+  const items = [...dropdown.querySelectorAll('.cb-item')];
+  if (!items.length) return;
+  _focusedIdx[which] = Math.max(0, Math.min(_focusedIdx[which] + dir, items.length - 1));
+  items.forEach((el, i) => el.classList.toggle('focused', i === _focusedIdx[which]));
+  items[_focusedIdx[which]].scrollIntoView({ block: 'nearest' });
+}
+
+function _selectFocused(which) {
+  const { dropdown, hidden } = _cbEls(which);
+  const focused = dropdown.querySelector('.cb-item.focused') || dropdown.querySelector('.cb-item.selected');
+  if (!focused) return false;
+  setCurrency(which, focused.dataset.value);
+  _closeDropdown(which);
+  hidden.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+export function initComboboxes() {
+  ['from', 'to'].forEach(which => {
+    const { input, dropdown, wrapper, hidden } = _cbEls(which);
+    if (!input) return;
+
+    input.addEventListener('focus', () => {
+      input.value       = '';
+      input.placeholder = 'Rechercher…';
+      _openDropdown(which);
+    });
+
+    input.addEventListener('input', () => {
+      _renderItems(which, input.value);
+      if (dropdown.hidden) {
+        dropdown.hidden = false;
+        wrapper.classList.add('open');
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      /* Laisser le mousedown du dropdown se traiter d'abord */
+      setTimeout(() => _closeDropdown(which), 150);
+    });
+
+    input.addEventListener('keydown', e => {
+      if (dropdown.hidden) { _openDropdown(which); return; }
+      switch (e.key) {
+        case 'ArrowDown': e.preventDefault(); _moveFocus(which, 1);  break;
+        case 'ArrowUp':   e.preventDefault(); _moveFocus(which, -1); break;
+        case 'Enter':     e.preventDefault(); _selectFocused(which); input.blur(); break;
+        case 'Escape':    _closeDropdown(which); input.blur(); break;
+      }
+    });
+
+    dropdown.addEventListener('mousedown', e => {
+      const item = e.target.closest('.cb-item');
+      if (!item) return;
+      e.preventDefault();
+      setCurrency(which, item.dataset.value);
+      _closeDropdown(which);
+      hidden.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    /* Clic sur le chevron */
+    wrapper.addEventListener('click', e => {
+      if (!e.target.closest('.combobox-input') && !e.target.closest('.combobox-dropdown')) {
+        if (dropdown.hidden) input.focus();
+        else _closeDropdown(which);
+      }
+    });
+  });
+}
+
+/* ============================================================
    Listes déroulantes
    ============================================================ */
 export function populateSelects() {
   if (!state.rates) return;
 
-  const fromEl = document.getElementById('from-currency');
-  const toEl   = document.getElementById('to-currency');
+  const savedFrom = document.getElementById('from-currency').value || 'USD';
+  const savedTo   = document.getElementById('to-currency').value   || 'EUR';
 
-  const savedFrom = fromEl.value || 'USD';
-  const savedTo   = toEl.value   || 'EUR';
-
-  const codes = Object.keys(state.rates).sort((a, b) => {
+  _sortedCodes = Object.keys(state.rates).sort((a, b) => {
     const pa = POPULAR.indexOf(a);
     const pb = POPULAR.indexOf(b);
     if (pa !== -1 && pb !== -1) return pa - pb;
@@ -84,25 +239,8 @@ export function populateSelects() {
     return a.localeCompare(b);
   });
 
-  const buildOptions = (selectedCode) => {
-    let html     = '';
-    let addedSep = false;
-
-    for (const code of codes) {
-      if (!addedSep && !POPULAR.includes(code)) {
-        html += '<option value="" disabled>────────────────</option>';
-        addedSep = true;
-      }
-      const name = CURRENCY_NAMES[code] || code;
-      const flag = CURRENCY_FLAGS[code] ? CURRENCY_FLAGS[code] + ' ' : '';
-      const sel  = code === selectedCode ? ' selected' : '';
-      html += `<option value="${escapeAttr(code)}"${sel}>${flag}${code} — ${name}</option>`;
-    }
-    return html;
-  };
-
-  fromEl.innerHTML = buildOptions(savedFrom);
-  toEl.innerHTML   = buildOptions(savedTo);
+  setCurrency('from', savedFrom);
+  setCurrency('to',   savedTo);
   updateStarButton();
 }
 
@@ -216,8 +354,8 @@ export function renderFavorites() {
     /* Clic : appliquer la paire */
     pill.addEventListener('click', e => {
       if (e.target.closest('.fav-remove') || e.target.closest('.fav-drag')) return;
-      document.getElementById('from-currency').value = from;
-      document.getElementById('to-currency').value   = to;
+      setCurrency('from', from);
+      setCurrency('to', to);
       calculate();
       updateStarButton();
     });
@@ -464,8 +602,8 @@ export function renderHistory() {
       `<button class="hist-remove" aria-label="Supprimer cette entrée" title="Supprimer">✕</button>`;
 
     const restore = () => {
-      document.getElementById('from-currency').value = from;
-      document.getElementById('to-currency').value   = to;
+      setCurrency('from', from);
+      setCurrency('to', to);
       document.getElementById('amount').value = String(amount).replace('.', ',');
       calculate();
       updateStarButton();
