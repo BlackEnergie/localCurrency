@@ -4,13 +4,19 @@
    pour l'API (fallback sur cache).
    ========================================================== */
 
-const CACHE_NAME = 'localcurrency-v3';
+const CACHE_NAME = 'localcurrency-v4';
 
 const ASSETS = [
   './',
   './index.html',
   './css/style.css',
   './js/app.js',
+  './js/currencies.js',
+  './js/state.js',
+  './js/format.js',
+  './js/storage.js',
+  './js/ui.js',
+  './js/api.js',
   './manifest.json',
   './favicon.svg',
   './icons/icon.svg'
