@@ -12,6 +12,7 @@ const ASSETS = [
   './css/style.css',
   './js/app.js',
   './manifest.json',
+  './favicon.svg',
   './icons/icon.svg'
 ];
 
