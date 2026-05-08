@@ -96,6 +96,10 @@ function setupUIListeners() {
 
   amountEl.addEventListener('input', calculate);
 
+  amountEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); amountEl.blur(); }
+  });
+
   amountEl.addEventListener('focus', () => {
     const n = parseInput(amountEl.value);
     if (isFinite(n) && !isNaN(n)) amountEl.value = String(n).replace('.', ',');
