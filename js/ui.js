@@ -158,27 +158,71 @@ export function renderFavorites() {
   section.hidden   = false;
   listEl.innerHTML = '';
 
-  state.favorites.forEach(({ from, to }) => {
+  /* ---- Drag & drop via Pointer Events (souris + touch + DevTools) ---- */
+  let drag = null; // { srcIdx, srcPill, ghost, offsetX, offsetY, targetIdx }
+
+  const onMove = e => {
+    if (!drag) return;
+    e.preventDefault();
+    drag.ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+    drag.ghost.style.top  = (e.clientY - drag.offsetY) + 'px';
+
+    /* Déterminer la pilule cible sous le pointeur */
+    drag.ghost.style.display = 'none';
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    drag.ghost.style.display = '';
+    const target = el && el.closest('.fav-pill');
+    listEl.querySelectorAll('.fav-pill').forEach(p => p.classList.remove('drag-over'));
+    if (target && target !== drag.srcPill) {
+      target.classList.add('drag-over');
+      drag.targetIdx = parseInt(target.dataset.index);
+    } else {
+      drag.targetIdx = null;
+    }
+  };
+
+  const onUp = () => {
+    if (!drag) return;
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup',   onUp);
+    drag.ghost.remove();
+    listEl.querySelectorAll('.fav-pill').forEach(p =>
+      p.classList.remove('dragging', 'drag-over'));
+
+    if (drag.targetIdx !== null && drag.targetIdx !== drag.srcIdx) {
+      const moved = state.favorites.splice(drag.srcIdx, 1)[0];
+      state.favorites.splice(drag.targetIdx, 0, moved);
+      saveFavorites();
+    }
+    drag = null;
+    renderFavorites();
+  };
+
+  state.favorites.forEach(({ from, to }, index) => {
     const flagFrom = CURRENCY_FLAGS[from] || '';
     const flagTo   = CURRENCY_FLAGS[to]   || '';
 
     const pill = document.createElement('div');
     pill.className = 'fav-pill';
     pill.setAttribute('role', 'listitem');
+    pill.dataset.index = index;
     pill.innerHTML =
+      `<span class="fav-drag" aria-hidden="true">&#9776;</span>` +
       `<span>${flagFrom} ${from}</span>` +
       `<span class="fav-arrow">→</span>` +
       `<span>${flagTo} ${to}</span>` +
       `<button class="fav-remove" aria-label="Supprimer ${from}→${to}" title="Supprimer">✕</button>`;
 
+    /* Clic : appliquer la paire */
     pill.addEventListener('click', e => {
-      if (e.target.closest('.fav-remove')) return;
+      if (e.target.closest('.fav-remove') || e.target.closest('.fav-drag')) return;
       document.getElementById('from-currency').value = from;
       document.getElementById('to-currency').value   = to;
       calculate();
       updateStarButton();
     });
 
+    /* Supprimer */
     pill.querySelector('.fav-remove').addEventListener('click', e => {
       e.stopPropagation();
       const idx = state.favorites.findIndex(f => f.from === from && f.to === to);
@@ -186,6 +230,32 @@ export function renderFavorites() {
       saveFavorites();
       renderFavorites();
       updateStarButton();
+    });
+
+    /* Démarrer le drag depuis la poignée */
+    pill.querySelector('.fav-drag').addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const rect = pill.getBoundingClientRect();
+
+      const ghost = pill.cloneNode(true);
+      ghost.classList.add('fav-ghost');
+      ghost.style.cssText =
+        `position:fixed;left:${rect.left}px;top:${rect.top}px;` +
+        `width:${rect.width}px;pointer-events:none;z-index:1000;`;
+      document.body.appendChild(ghost);
+
+      pill.classList.add('dragging');
+      drag = {
+        srcIdx:   index,
+        srcPill:  pill,
+        targetIdx: null,
+        ghost,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+      };
+
+      document.addEventListener('pointermove', onMove, { passive: false });
+      document.addEventListener('pointerup',   onUp);
     });
 
     listEl.appendChild(pill);

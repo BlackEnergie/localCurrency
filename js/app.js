@@ -40,6 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (state.rates) {
     populateSelects();
+    /* Auto-sélectionner le premier favori si disponible */
+    if (state.favorites.length > 0) {
+      const { from, to } = state.favorites[0];
+      document.getElementById('from-currency').value = from;
+      document.getElementById('to-currency').value   = to;
+    }
     calculate();
   }
 
