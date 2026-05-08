@@ -89,6 +89,12 @@
             </svg>
           </button>
           <span class="rate-label" id="rate-label">—</span>
+          <button class="btn-favorite" id="btn-favorite" aria-label="Ajouter aux favoris">
+            <svg id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </button>
         </div>
 
         <!-- Devise cible -->
@@ -112,6 +118,14 @@
         </div>
 
       </div><!-- /card -->
+
+      <!-- Favoris -->
+      <div class="favorites-section" id="favorites-section" hidden>
+        <div class="favorites-header">
+          <span class="favorites-title">★ Favoris</span>
+        </div>
+        <div class="favorites-list" id="favorites-list" role="list"></div>
+      </div>
 
       <!-- Date de mise à jour -->
       <div class="update-bar" id="update-bar">

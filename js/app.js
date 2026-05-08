@@ -9,6 +9,7 @@
 /* ---- Constantes ---- */
 const API_URL       = 'https://open.er-api.com/v6/latest/USD';
 const STORAGE_KEY   = 'localcurrency_cache';
+const FAVORITES_KEY = 'localcurrency_favorites';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 heures en ms
 
 /* Devises affichées en tête de liste */
@@ -135,6 +136,7 @@ let state = {
   base:       'USD',  // devise de base retournée par l'API
   lastUpdate: null,   // Date object
   isLoading:  false,
+  favorites:  [],     // [{ from: 'USD', to: 'EUR' }, ...]
 };
 
 /* ============================================================
@@ -147,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Charger le cache local d'abord (affichage instantané) */
   loadFromStorage();
+  loadFavorites();
 
   /* Formater la valeur initiale du champ montant */
   const amountEl = document.getElementById('amount');
@@ -157,6 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
     populateSelects();
     calculate();
   }
+
+  renderFavorites();
 
   /* Rafraîchir si le cache est périmé ou absent */
   if (!state.rates || isCacheStale()) {
@@ -403,10 +408,117 @@ function populateSelects() {
 
   fromEl.innerHTML = buildOptions(savedFrom);
   toEl.innerHTML   = buildOptions(savedTo);
+  updateStarButton();
 }
 
 function escapeAttr(s) {
   return s.replace(/[&"<>]/g, c => ({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+/* ============================================================
+   Favoris
+   ============================================================ */
+function loadFavorites() {
+  try {
+    const raw = localStorage.getItem(FAVORITES_KEY);
+    if (raw) state.favorites = JSON.parse(raw);
+    if (!Array.isArray(state.favorites)) state.favorites = [];
+  } catch {
+    state.favorites = [];
+  }
+}
+
+function saveFavorites() {
+  try {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(state.favorites));
+  } catch {
+    console.warn('Impossible d\'écrire les favoris dans localStorage.');
+  }
+}
+
+function currentPair() {
+  return {
+    from: document.getElementById('from-currency').value,
+    to:   document.getElementById('to-currency').value,
+  };
+}
+
+function isFavorite(from, to) {
+  return state.favorites.some(f => f.from === from && f.to === to);
+}
+
+function toggleFavorite() {
+  const { from, to } = currentPair();
+  if (!from || !to) return;
+
+  const idx = state.favorites.findIndex(f => f.from === from && f.to === to);
+  if (idx === -1) {
+    state.favorites.push({ from, to });
+    showToast('Ajouté aux favoris ⭐');
+  } else {
+    state.favorites.splice(idx, 1);
+    showToast('Retiré des favoris');
+  }
+  saveFavorites();
+  renderFavorites();
+  updateStarButton();
+}
+
+function updateStarButton() {
+  const btn = document.getElementById('btn-favorite');
+  if (!btn) return;
+  const { from, to } = currentPair();
+  const active = isFavorite(from, to);
+  btn.classList.toggle('is-favorite', active);
+  btn.setAttribute('aria-label', active ? 'Retirer des favoris' : 'Ajouter aux favoris');
+}
+
+function renderFavorites() {
+  const section  = document.getElementById('favorites-section');
+  const listEl   = document.getElementById('favorites-list');
+
+  if (state.favorites.length === 0) {
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden = false;
+  listEl.innerHTML = '';
+
+  state.favorites.forEach(({ from, to }) => {
+    const flagFrom = CURRENCY_FLAGS[from] || '';
+    const flagTo   = CURRENCY_FLAGS[to]   || '';
+
+    const pill = document.createElement('div');
+    pill.className  = 'fav-pill';
+    pill.setAttribute('role', 'listitem');
+    pill.innerHTML =
+      `<span>${flagFrom} ${from}</span>` +
+      `<span class="fav-arrow">→</span>` +
+      `<span>${flagTo} ${to}</span>` +
+      `<button class="fav-remove" aria-label="Supprimer ${from}→${to}" title="Supprimer">✕</button>`;
+
+    /* Clic sur la pilule → appliquer la paire */
+    pill.addEventListener('click', e => {
+      if (e.target.closest('.fav-remove')) return;
+      document.getElementById('from-currency').value = from;
+      document.getElementById('to-currency').value   = to;
+      calculate();
+      updateStarButton();
+    });
+
+    /* Clic sur ✕ → supprimer le favori */
+    pill.querySelector('.fav-remove').addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = state.favorites.findIndex(f => f.from === from && f.to === to);
+      if (idx !== -1) state.favorites.splice(idx, 1);
+      saveFavorites();
+      renderFavorites();
+      updateStarButton();
+    });
+
+    listEl.appendChild(pill);
+  });
 }
 
 /* ============================================================
@@ -435,10 +547,19 @@ function setupUIListeners() {
       amountEl.value = formatInputValue(n);
     }
   });
-  document.getElementById('from-currency').addEventListener('change', calculate);
-  document.getElementById('to-currency').addEventListener('change', calculate);
+  document.getElementById('from-currency').addEventListener('change', () => { calculate(); updateStarButton(); });
+  document.getElementById('to-currency').addEventListener('change', () => { calculate(); updateStarButton(); });
 
   document.getElementById('btn-refresh').addEventListener('click', () => fetchRates());
+
+  document.getElementById('btn-favorite').addEventListener('click', () => {
+    const btn = document.getElementById('btn-favorite');
+    btn.querySelector('svg').classList.add('pop');
+    btn.querySelector('svg').addEventListener('animationend', () => {
+      btn.querySelector('svg').classList.remove('pop');
+    }, { once: true });
+    toggleFavorite();
+  });
 
   document.getElementById('btn-swap').addEventListener('click', () => {
     const fromEl = document.getElementById('from-currency');
@@ -453,6 +574,7 @@ function setupUIListeners() {
     btn.addEventListener('animationend', () => btn.classList.remove('swapping'), { once: true });
 
     calculate();
+    updateStarButton();
   });
 }
 
