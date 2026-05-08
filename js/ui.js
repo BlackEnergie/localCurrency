@@ -250,3 +250,19 @@ export function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('visible'), 2800);
 }
+
+/* Toast persistant avec bouton d'action (ex. mise à jour SW).
+   Pas de fermeture automatique — l'utilisateur doit cliquer. */
+export function showUpdateToast(onConfirm) {
+  const el = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  el.innerHTML =
+    'Mise à jour disponible\u00a0' +
+    '<button class="toast-action">Actualiser</button>';
+  el.classList.add('visible');
+  el.querySelector('.toast-action').addEventListener('click', () => {
+    el.classList.remove('visible');
+    el.innerHTML = '';
+    onConfirm();
+  });
+}

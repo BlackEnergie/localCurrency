@@ -4,7 +4,7 @@
    pour l'API (fallback sur cache).
    ========================================================== */
 
-const CACHE_NAME = 'localcurrency-v4';
+const CACHE_NAME = 'localcurrency-v5';
 
 const ASSETS = [
   './',
@@ -27,7 +27,12 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
-  self.skipWaiting();
+  /* Ne pas appeler skipWaiting() ici : on attend la confirmation de l'utilisateur */
+});
+
+/* ------ Activation à la demande de l'utilisateur ------ */
+self.addEventListener('message', event => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 /* ------ Activation : nettoyage des anciens caches ------ */

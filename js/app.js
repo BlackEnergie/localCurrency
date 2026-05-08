@@ -12,6 +12,7 @@ import {
   populateSelects, calculate,
   updateUpdateBar, updateStatusUI,
   renderFavorites, updateStarButton, toggleFavorite,
+  showUpdateToast,
 } from './ui.js';
 import { fetchRates } from './api.js';
 
@@ -44,11 +45,33 @@ document.addEventListener('DOMContentLoaded', () => {
    Service Worker
    ============================================================ */
 function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker
-      .register('./sw.js')
-      .catch(err => console.warn('Service Worker non enregistrÃ© :', err));
-  }
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.register('./sw.js').then(registration => {
+    /* SW déjà en attente (ex. page rechargée pendant une mise à jour) */
+    if (registration.waiting) {
+      showUpdateToast(() => applyUpdate(registration.waiting));
+    }
+
+    /* Nouveau SW trouvé pendant la session */
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateToast(() => applyUpdate(newWorker));
+        }
+      });
+    });
+  }).catch(err => console.warn('Service Worker non enregistré :', err));
+
+  /* Recharger quand le nouveau SW prend le contrôle */
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+
+function applyUpdate(worker) {
+  worker.postMessage('SKIP_WAITING');
 }
 
 /* ============================================================
