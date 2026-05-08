@@ -13,10 +13,10 @@ export const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 h en ms
    shadow : valeurs R,G,B pour rgba() */
 export const THEMES = [
   { id: 'violet',  label: 'Violet',    primary: '#6C63FF', dark: '#4B44CC', mid: '#9B8BFF', light: '#EDE9FF', bg: '#F0EEFF', border: '#E0DBFF', resultBg: '#F5F3FF', text: '#1E1B4B', shadow: '108,99,255'  },
-  { id: 'rose',    label: 'Rose',      primary: '#E11D48', dark: '#9F1239', mid: '#FB7185', light: '#FFE4E6', bg: '#FFF1F2', border: '#FECDD3', resultBg: '#FFF5F5', text: '#4C0519', shadow: '225,29,72'   },
-  { id: 'emerald', label: 'Émeraude', primary: '#10B981', dark: '#059669', mid: '#34D399', light: '#D1FAE5', bg: '#ECFDF5', border: '#A7F3D0', resultBg: '#F0FDF4', text: '#064E3B', shadow: '16,185,129'  },
-  { id: 'sky',     label: 'Ciel',      primary: '#0EA5E9', dark: '#0284C7', mid: '#38BDF8', light: '#E0F2FE', bg: '#F0F9FF', border: '#BAE6FD', resultBg: '#F0F9FF', text: '#0C4A6E', shadow: '14,165,233'  },
-  { id: 'amber',   label: 'Ambre',     primary: '#D97706', dark: '#B45309', mid: '#FBBF24', light: '#FEF3C7', bg: '#FFFBEB', border: '#FDE68A', resultBg: '#FEFCE8', text: '#451A03', shadow: '217,119,6'   },
+  { id: 'rose',    label: 'Bordeaux',  primary: '#9B2335', dark: '#6E1624', mid: '#C4566A', light: '#F5E0E3', bg: '#FBF0F1', border: '#E8C4C9', resultBg: '#FDF5F6', text: '#3B0D15', shadow: '155,35,53'   },
+  { id: 'emerald', label: 'Forêt',    primary: '#2D6A4F', dark: '#1B4332', mid: '#52B788', light: '#D8F3DC', bg: '#EEF7F0', border: '#B7E4C7', resultBg: '#F2FAF4', text: '#081C15', shadow: '45,106,79'   },
+  { id: 'sky',     label: 'Océan',    primary: '#1A6B8A', dark: '#0E4D66', mid: '#3A9AB5', light: '#D6EEF5', bg: '#EBF6FA', border: '#A8D8E8', resultBg: '#F0F9FC', text: '#072D3F', shadow: '26,107,138'  },
+  { id: 'amber',   label: 'Terre',     primary: '#A85C2C', dark: '#7A3F1A', mid: '#C98048', light: '#F5E6D8', bg: '#FAF1E9', border: '#E8CEAD', resultBg: '#FDF6EF', text: '#3B1A08', shadow: '168,92,44'   },
   { id: 'slate',   label: 'Ardoise',   primary: '#64748B', dark: '#475569', mid: '#94A3B8', light: '#F1F5F9', bg: '#F8FAFC', border: '#E2E8F0', resultBg: '#F8FAFC', text: '#0F172A', shadow: '100,116,139' },
 ];
 
