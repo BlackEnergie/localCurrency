@@ -348,7 +348,6 @@ export function applyTheme(id) {
   root.style.setProperty('--clr-primary-dark',  theme.dark);
   root.style.setProperty('--clr-primary-mid',   theme.mid);
   root.style.setProperty('--clr-primary-light', theme.light);
-  root.style.setProperty('--clr-bg',            theme.bg);
   root.style.setProperty('--clr-border',        theme.border);
   root.style.setProperty('--clr-result-bg',     theme.resultBg);
   root.style.setProperty('--clr-text',          theme.text);
