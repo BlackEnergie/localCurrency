@@ -10,7 +10,6 @@
 const API_URL       = 'https://open.er-api.com/v6/latest/USD';
 const STORAGE_KEY   = 'localcurrency_cache';
 const FAVORITES_KEY = 'localcurrency_favorites';
-const THEME_KEY     = 'localcurrency_theme';
 const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 heures en ms
 
 /* Devises affichées en tête de liste */
@@ -145,7 +144,6 @@ let state = {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
-  initTheme();
   setupNetworkListeners();
   setupUIListeners();
 
@@ -536,37 +534,6 @@ function renderFavorites() {
 }
 
 /* ============================================================
-   Thème sombre / clair
-   ============================================================ */
-function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY);
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const isDark = saved ? saved === 'dark' : prefersDark;
-  applyTheme(isDark ? 'dark' : 'light', false);
-}
-
-function applyTheme(theme, save = true) {
-  document.documentElement.setAttribute('data-theme', theme);
-  const sun  = document.getElementById('icon-theme-sun');
-  const moon = document.getElementById('icon-theme-moon');
-  if (theme === 'dark') {
-    sun.style.display  = 'block';
-    moon.style.display = 'none';
-    document.getElementById('btn-theme').setAttribute('aria-label', 'Passer en thème clair');
-  } else {
-    sun.style.display  = 'none';
-    moon.style.display = 'block';
-    document.getElementById('btn-theme').setAttribute('aria-label', 'Passer en thème sombre');
-  }
-  if (save) localStorage.setItem(THEME_KEY, theme);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'light';
-  applyTheme(current === 'dark' ? 'light' : 'dark');
-}
-
-/* ============================================================
    Écouteurs d'événements UI
    ============================================================ */
 function setupUIListeners() {
@@ -596,7 +563,6 @@ function setupUIListeners() {
   document.getElementById('to-currency').addEventListener('change', () => { calculate(); updateStarButton(); });
 
   document.getElementById('btn-refresh').addEventListener('click', () => fetchRates());
-  document.getElementById('btn-theme').addEventListener('click', () => toggleTheme());
 
   document.getElementById('btn-favorite').addEventListener('click', () => {
     const btn = document.getElementById('btn-favorite');
